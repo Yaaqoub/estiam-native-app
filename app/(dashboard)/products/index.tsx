@@ -1,24 +1,39 @@
 import { useEffect, useCallback, useState } from 'react';
 import axios from 'axios';
-import {StyleSheet, Image, View, ScrollView} from 'react-native';
-import { ThemedText } from '@/components/ThemedText';
+import {StyleSheet, View, ScrollView, Image} from 'react-native';
 import { Text, Card } from '@rneui/themed';
 
 interface Product {
   title: string;
   description: string;
+  images: string[]
 }
 export default function Products() {
   const [products, setProducts] = useState<Product[]>([]);
 
   const getProducts = useCallback(async () => {
     try {
+      const formattedProducts: Product[] = [];
       const products = await axios({
         method: 'GET',
         url: 'https://api.escuelajs.co/api/v1/products',
       });
 
-      setProducts(products.data as Product[]);
+      for (const product of products.data) {
+        let imageUrl: string = '';
+        try {
+          imageUrl = (new URL(product.images[0])).toString();
+        } catch (error) {
+          imageUrl = 'https://projetcartylion.fr/wp-content/uploads/2020/08/Placeholder-600x600.png';
+        }
+
+        formattedProducts.push({
+          ...product,
+          images: [imageUrl]
+        });
+      }
+
+      setProducts(formattedProducts);
     } catch (error) {
       setProducts([]);
     }
@@ -31,12 +46,6 @@ export default function Products() {
 
   return (
     <View style={styles.container}>
-      <ThemedText
-        type="title"
-        darkColor="black"
-      >
-        Products
-      </ThemedText>
       <ScrollView>
         {
           products.map((product, index) => (
@@ -45,9 +54,9 @@ export default function Products() {
               <Card.Divider/>
               <View style={{position:"relative",alignItems:"center"}}>
                 <Image
+                  source={{ uri: product.images[0] }}
                   style={{width:"100%",height:100}}
                   resizeMode="contain"
-                  source={{ uri: "https://avatars0.githubusercontent.com/u/32242596?s=460&u=1ea285743fc4b083f95d6ee0be2e7bb8dcfc676e&v=4" }}
                 />
                 <Text >{product.description}</Text>
               </View>
@@ -60,10 +69,10 @@ export default function Products() {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        marginVertical: 80,
-        marginHorizontal: 40,
-    },
+  container: {
+    marginVertical: 10,
+    marginHorizontal: 40,
+  },
   titleContainer: {
     flexDirection: 'row',
     gap: 8
