@@ -3,8 +3,10 @@ import axios from 'axios';
 import {StyleSheet, View, ScrollView, Image, Button, RefreshControl} from 'react-native';
 import { Text, Card } from '@rneui/themed';
 import { Picker } from '@react-native-picker/picker';
+import {getImageUrl} from '@/utils/getImageUrl';
 
 interface Product {
+  id: number;
   title: string;
   description: string;
   images: string[];
@@ -20,57 +22,55 @@ interface Category {
   image: string;
 }
 
+interface CategoryParams {
+  offset: number;
+  limit: number;
+  categoryId: number | null;
+}
+
 export default function Products() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [offset, setOffset] = useState<number>(0);
-  const [limit, setLimit] = useState<number>(1);
   const [refreshing, setRefreshing] = useState<boolean>(false);
-  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+  const [categoryParams, setCategoryParams] = useState<CategoryParams>({
+    offset: 0,
+    limit: 1,
+    categoryId: null,
+  });
 
-  const getProducts = useCallback(async (reset = false, categoryId: number | null = null) => {
-    let _offset = offset;
-
+  const getProducts = useCallback(async () => {
     try {
-      if (reset) {
-        _offset = 0;
+      const params: any = {
+        offset: categoryParams.offset,
+        limit: categoryParams.limit
+      };
+
+      if (categoryParams.categoryId !== null) {
+        params.categoryId = categoryParams.categoryId;
       }
 
-      const formattedProducts: Product[] = [];
       const products = await axios({
         method: 'GET',
         url: 'https://api.escuelajs.co/api/v1/products',
-        params: {
-          offset: _offset,
-          limit,
-          ...(categoryId && {categoryId: categoryId})
-        }
+        params
       });
 
-      for (const product of products.data) {
-        let imageUrl: string = '';
-        try {
-          imageUrl = (new URL(product.images[0])).toString();
-        } catch (error) {
-          imageUrl = 'https://projetcartylion.fr/wp-content/uploads/2020/08/Placeholder-600x600.png';
-        }
+      const formattedProducts: Product[] = products.data.map((item: Product) => {
+        return {
+          ...item,
+          images: [getImageUrl(item.images[0])],
+        };
+      });
 
-        formattedProducts.push({
-          ...product,
-          images: [imageUrl]
-        });
-      }
-
-      if (reset) {
-        setProducts(formattedProducts);
-        setRefreshing(false);
-      } else {
-        setProducts((prevProducts) => [...prevProducts, ...formattedProducts]);
-      }
+      setProducts((prevProducts) => (
+        categoryParams.offset === 0 ? formattedProducts : [...prevProducts, ...formattedProducts]
+      ));
+      setRefreshing(false);
     } catch (error) {
       setProducts([]);
+      setRefreshing(false);
     }
-  }, [limit, offset]);
+  }, [categoryParams]);
 
   const getCategories = useCallback(async () => {
     try {
@@ -86,26 +86,39 @@ export default function Products() {
   }, []);
 
   useEffect(() => {
-    getProducts();
     getCategories();
   }, []);
 
+  useEffect(() => {
+    getProducts();
+  }, [categoryParams]);
+
   const loadProducts = () => {
-    setOffset((prevOffset) => prevOffset + limit);
-    getProducts(false, selectedCategory);
+    setCategoryParams((prevState) => ({
+      ...prevState,
+      offset: prevState.offset + prevState.limit,
+    }));
   };
 
   const handleRefresh = () => {
     setRefreshing(true);
-    setOffset(0);
-    setSelectedCategory(null);
-    getProducts(true);
+    setCategoryParams({
+      offset: 0,
+      limit: 1,
+      categoryId: null,
+    });
   };
 
   const handleCategoryChange = (categoryValue: number | null) => {
-    setSelectedCategory(categoryValue);
-    setOffset(0);
-    getProducts(true, categoryValue);
+    let _cat = categoryValue;
+    if (categoryValue) {
+      _cat = JSON.parse(categoryValue.toString());
+    }
+    setCategoryParams((prevState) => ({
+      ...prevState,
+      offset: 0,
+      categoryId: _cat,
+    }));
   };
 
   return (
@@ -113,7 +126,7 @@ export default function Products() {
 
       <View>
         <Picker
-          selectedValue={selectedCategory}
+          selectedValue={categoryParams.categoryId}
           onValueChange={(value) => handleCategoryChange(value)}
           style={styles.picker}
           itemStyle={{
@@ -139,7 +152,7 @@ export default function Products() {
         {
           products.map((product, index) => (
             <Card key={index}>
-              <Card.Title>{product.title}</Card.Title>
+              <Card.Title>{`(${product.id}) ${product.title}`}</Card.Title>
               <Card.Divider/>
               <View style={{position:"relative",alignItems:"center"}}>
                 <Image
