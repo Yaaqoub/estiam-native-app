@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useState } from 'react';
 import axios from 'axios';
-import {StyleSheet, View, ScrollView, Image} from 'react-native';
+import {StyleSheet, View, ScrollView, Image, Button, RefreshControl} from 'react-native';
 import { Text, Card } from '@rneui/themed';
 
 interface Product {
@@ -10,13 +10,23 @@ interface Product {
 }
 export default function Products() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [offset, setOffset] = useState<number>(0);
+  const [limit, setLimit] = useState<number>(1);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
 
-  const getProducts = useCallback(async () => {
+  const getProducts = useCallback(async (reset = false) => {
+    let _offset = offset;
     try {
+      if (reset) {
+        _offset = 0;
+      }
       const formattedProducts: Product[] = [];
       const products = await axios({
         method: 'GET',
         url: 'https://api.escuelajs.co/api/v1/products',
+        params: {
+          offset: _offset, limit
+        }
       });
 
       for (const product of products.data) {
@@ -33,20 +43,39 @@ export default function Products() {
         });
       }
 
-      setProducts(formattedProducts);
+      if (reset) {
+        setProducts(formattedProducts);
+        setRefreshing(false);
+      } else {
+        setProducts((prevProducts) => [...prevProducts, ...formattedProducts]);
+      }
     } catch (error) {
       setProducts([]);
     }
-  }, []);
+  }, [limit, offset]);
 
   useEffect(() => {
     getProducts();
-  }, [getProducts]);
+  }, []);
 
+  const loadProducts = () => {
+    setOffset((prevOffset) => prevOffset + limit);
+    getProducts();
+  };
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    setOffset(0);
+    getProducts(true);
+  };
 
   return (
     <View style={styles.container}>
-      <ScrollView>
+      <ScrollView
+        refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+      >
         {
           products.map((product, index) => (
             <Card key={index}>
@@ -64,6 +93,12 @@ export default function Products() {
           ))
         }
       </ScrollView>
+      <View>
+        <Button
+          title="Load More"
+          onPress={loadProducts}
+        />
+      </View>
     </View>
   );
 }
@@ -72,6 +107,7 @@ const styles = StyleSheet.create({
   container: {
     marginVertical: 10,
     marginHorizontal: 40,
+    flex: 1,
   },
   titleContainer: {
     flexDirection: 'row',
