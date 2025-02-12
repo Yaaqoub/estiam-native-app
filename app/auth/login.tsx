@@ -1,10 +1,26 @@
+import React, { useState } from 'react';
 import {
   TouchableWithoutFeedback,
   TouchableOpacity, StyleSheet, Text, TextInput, View, Keyboard,
   KeyboardAvoidingView, Platform
 } from 'react-native';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function LoginScreen() {
+  const { login } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+
+  const handleLogin = async () => {
+    setError('');
+
+    try {
+      await login(email.toLowerCase(),  password);
+    } catch (e) {
+      setError('Invalid email or password!');
+    }
+  };
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
@@ -16,19 +32,24 @@ export default function LoginScreen() {
           <View style={styles.inputContainer}>
             <TextInput
               placeholder="Enter your email"
-              value={'test@email.com'}
+              value={email}
               style={styles.input}
+              onChangeText={setEmail}
             />
           </View>
           <View style={styles.inputContainer}>
             <TextInput
               placeholder="Enter your password"
-              value={'***********'}
+              value={password}
               style={styles.input}
+              onChangeText={setPassword}
+              secureTextEntry
             />
           </View>
+          {error ? <Text style={styles.error}>{error}</Text> : null}
           <TouchableOpacity
             style={styles.button}
+            onPress={handleLogin}
           >
             <Text style={styles.buttonText}>Login</Text>
           </TouchableOpacity>
@@ -74,5 +95,9 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontSize: 20,
+  },
+  error: {
+    color: 'red',
+    marginBottom: 5,
   }
 });

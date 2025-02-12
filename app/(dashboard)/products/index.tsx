@@ -4,6 +4,7 @@ import {StyleSheet, View, ScrollView, Image, Button, RefreshControl} from 'react
 import { Text, Card } from '@rneui/themed';
 import { Picker } from '@react-native-picker/picker';
 import {getImageUrl} from '@/utils/getImageUrl';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Product {
   id: number;
@@ -29,6 +30,7 @@ interface CategoryParams {
 }
 
 export default function Products() {
+  const { isAuthenticated } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [refreshing, setRefreshing] = useState<boolean>(false);
@@ -120,6 +122,14 @@ export default function Products() {
       categoryId: _cat,
     }));
   };
+
+  if (!isAuthenticated) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+        <Text>You need to login before opening this page</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
