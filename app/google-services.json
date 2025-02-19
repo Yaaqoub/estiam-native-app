@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "430629029880",
+    "project_id": "estiam-test-62b75",
+    "storage_bucket": "estiam-test-62b75.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:430629029880:android:58cbf783c8eaaa05b3780d",
+        "android_client_info": {
+          "package_name": "com.estiam.testapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBVsISADq-cuMKcp5O-4P7Z78Mq4PPOXJU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
